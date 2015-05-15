@@ -3,6 +3,8 @@
 package net.sf.gogui.sgf;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -38,6 +40,10 @@ import net.sf.gogui.go.PointList;
 import net.sf.gogui.util.ByteCountInputStream;
 import net.sf.gogui.util.ProgressShow;
 
+import org.mozilla.intl.chardet.nsDetector;
+import org.mozilla.intl.chardet.nsICharsetDetectionObserver;
+import org.mozilla.intl.chardet.nsPSMDetector;
+
 /** SGF reader.
     @bug The error messages currently don't contain line numbers, see
     implementation of getError(). */
@@ -63,12 +69,62 @@ public final class SgfReader
         m_progressShow = progressShow;
         m_size = size;
         m_isFile = (in instanceof FileInputStream && file != null);
+        String charset = "ISO-8859-1";
+        
         if (progressShow != null)
             progressShow.showProgress(0);
+
+        try
+        {
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = in.read(buffer)) > -1) {
+                buf.write(buffer, 0, len);
+            }
+            buf.flush();
+            in.close();
+            in = new ByteArrayInputStream(buf.toByteArray());
+
+            final InputStream imp = new ByteArrayInputStream(buf.toByteArray());
+            
+            //detect charset 
+            class CodeNmeHolder {
+                public String code_name="ISO-8859-1";
+            }
+
+            final CodeNmeHolder holder = new CodeNmeHolder();
+            nsDetector det = new nsDetector(nsPSMDetector.ALL);
+
+            det.Init(new nsICharsetDetectionObserver() {
+                         public void Notify(String charset) {
+                             holder.code_name = charset;
+                         }
+                     }
+            );
+            
+            boolean done = false;
+            boolean isAscii = true;
+            while (!done && (len = imp.read(buffer, 0, buffer.length)) != -1) {
+            	if (isAscii) {
+            		isAscii = det.isAscii(buffer, len);
+            	}
+            	if (!isAscii) {
+            		done = det.DoIt(buffer, len, false);
+            	}  
+            }
+            det.Done();
+            charset = holder.code_name;
+        }
+        catch (Exception e)
+        {
+        	assert false;
+        }
+        
         try
         {
             // SGF FF 4 standard defines ISO-8859-1 as default
-            readSgf(in, "ISO-8859-1");
+            readSgf(in, charset);
         }
         catch (SgfCharsetChanged e1)
         {

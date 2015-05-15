@@ -45,6 +45,9 @@ Build file for Apache Ant (http://ant.apache.org/)
 <condition property="quaqua.available">
   <available file="lib/quaqua.jar"/>
 </condition>
+<condition property="chardet.available">
+  <available file="lib/chardet.jar"/>
+</condition>
 
 <zipfileset id="distfiles-src" prefix="gogui-${version}" dir="."
   includes="
@@ -157,6 +160,15 @@ last version tested with GoGui was:
 http://www.randelshofer.ch/quaqua/files/quaqua-5.2.1.nested.zip
 To compile GoGui with limited Mac support, you can invoke ant with the
 option -Dquaqua.ignore=true.
+  </fail>
+</target>
+<target name="check-chardet" >
+  <fail unless="chardet.available">
+lib/chardet.jar not found.
+Please download the jchardet (http://sf.net/projects/jchardet/)
+and copy the file chardet.jar from the distribution to lib/chardet.jar. The
+last version tested with GoGui was:
+http://downloads.sourceforge.net/project/jchardet/jchardet/1.1/jchardet-1.1.zip
   </fail>
 </target>
 
@@ -402,7 +414,7 @@ with "location" replaced by the location of the file docbookx.dtd.
 </target>
 
 <target name="gogui.jar"
-	depends="compile,check-quaqua,gogui-manifest,gogui-manifest-classpath">
+	depends="compile,check-quaqua,check-chardet,gogui-manifest,gogui-manifest-classpath">
 <mkdir dir="lib"/>
 <jar destfile="lib/gogui.jar" manifest="build/manifests/gogui.mf"
      compress="true" level="9">
@@ -517,7 +529,7 @@ with "location" replaced by the location of the file docbookx.dtd.
 </target>
 
 <target name="gogui-display.jar"
-	depends="compile,check-quaqua,gogui-display-manifest,gogui-display-manifest-classpath">
+	depends="compile,check-quaqua,check-chardet,gogui-display-manifest,gogui-display-manifest-classpath">
   <mkdir dir="lib"/>
   <jar destfile="lib/gogui-display.jar"
        manifest="build/manifests/gogui-display.mf" compress="true" level="9">
